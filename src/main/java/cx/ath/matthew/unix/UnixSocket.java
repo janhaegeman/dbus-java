@@ -39,7 +39,9 @@ public class UnixSocket
 {
    private static final Logger LOG = Logger.getLogger(UnixSocket.class.getName());
     
-   static { System.loadLibrary("unix-java"); }
+   static {
+       org.it4y.jni.JNILoader.loadLibrary("libunix-java");
+   }
    private native void native_set_pass_cred(int sock, boolean passcred) throws IOException;
    private native int native_connect(String address, boolean abs) throws IOException;
    private native void native_close(int sock) throws IOException;

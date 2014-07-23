@@ -33,7 +33,9 @@ import java.io.IOException;
  */
 public class UnixServerSocket
 {
-   static { System.loadLibrary("unix-java"); }
+   static {
+       org.it4y.jni.JNILoader.loadLibrary("libunix-java");
+   }
    private native int native_bind(String address, boolean abs) throws IOException;
    private native void native_close(int sock) throws IOException;
    private native int native_accept(int sock) throws IOException;
