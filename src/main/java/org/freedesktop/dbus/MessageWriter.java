@@ -10,16 +10,18 @@
 */
 package org.freedesktop.dbus;
 
-import java.io.BufferedOutputStream;
-import java.io.OutputStream;
-import java.io.IOException;
-
-import cx.ath.matthew.debug.Debug;
 import cx.ath.matthew.unix.USOutputStream;
 import cx.ath.matthew.utils.Hexdump;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 public final class MessageWriter
 {
+   private final Logger logger= LoggerFactory.getLogger(MessageWriter.class);
    private OutputStream out;
 	private boolean isunix;
    public MessageWriter(OutputStream out)
@@ -36,25 +38,22 @@ public final class MessageWriter
    }
    public void writeMessage(Message m) throws IOException
    {
-      if (Debug.debug) {
-         Debug.print(Debug.INFO, "<= "+m);
-      }
+      logger.info("<= "+m);
       if (null == m) return;
       if (null == m.getWireData()) {
-         if (Debug.debug) Debug.print(Debug.WARN, "Message "+m+" wire-data was null!");
+         logger.warn("Message "+m+" wire-data was null!");
          return;
       }
       if (isunix) {
-         if (Debug.debug) {
-            Debug.print(Debug.DEBUG, "Writing all "+m.getWireData().length+" buffers simultaneously to Unix Socket");
-            for (byte[] buf: m.getWireData()) 
-               Debug.print(Debug.VERBOSE, "("+buf+"):"+ (null==buf? "": Hexdump.format(buf)));
-         }
+          logger.debug("Writing all "+m.getWireData().length+" buffers simultaneously to Unix Socket");
+          if (logger.isTraceEnabled()) {
+                for (byte[] buf: m.getWireData())
+                   logger.trace( "("+buf+"):"+ (null==buf? "": Hexdump.format(buf)));
+          }
          ((USOutputStream) out).write(m.getWireData());
       } else
          for (byte[] buf: m.getWireData()) {
-            if (Debug.debug)
-               Debug.print(Debug.VERBOSE, "("+buf+"):"+ (null==buf? "": Hexdump.format(buf)));
+            logger.trace("("+buf+"):"+ (null==buf? "": Hexdump.format(buf)));
             if (null == buf) break;
             out.write(buf);
          }
@@ -62,7 +61,7 @@ public final class MessageWriter
    }
    public void close() throws IOException
    {
-      if (Debug.debug) Debug.print(Debug.INFO, "Closing Message Writer");
+      logger.info("Closing Message Writer");
       out.close();
    }
 }

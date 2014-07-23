@@ -10,7 +10,8 @@
 */
 package org.freedesktop.dbus;
 
-import cx.ath.matthew.debug.Debug;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.regex.Pattern;
 
@@ -38,6 +39,7 @@ final class ObjectTree
          this.data = data;
       }
    }
+   private final Logger logger= LoggerFactory.getLogger(ObjectTree.class);
    private TreeNode root;
    public ObjectTree()
    {
@@ -112,12 +114,12 @@ final class ObjectTree
    }
    public void add(String path, ExportedObject object, String data)
    {
-      if (Debug.debug) Debug.print(Debug.DEBUG, "Adding "+path+" to object tree");
+     logger.debug("Adding "+path+" to object tree");
       root = recursiveAdd(root, path, object, data);
    }
    public void remove(String path)
    {
-      if (Debug.debug) Debug.print(Debug.DEBUG, "Removing "+path+" from object tree");
+      logger.debug("Removing "+path+" from object tree");
       TreeNode t = recursiveFind(root, path);
       t.object = null;
       t.data = null;

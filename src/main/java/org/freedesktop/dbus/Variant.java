@@ -10,15 +10,16 @@
 */
 package org.freedesktop.dbus;
 
-import static org.freedesktop.dbus.Gettext._;
+import org.freedesktop.dbus.exceptions.DBusException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.Vector;
-import org.freedesktop.dbus.exceptions.DBusException;
 
-import cx.ath.matthew.debug.Debug;
+import static org.freedesktop.dbus.Gettext._;
 
 /**
  * A Wrapper class for Variant values. 
@@ -28,6 +29,7 @@ import cx.ath.matthew.debug.Debug;
  */
 public final class Variant<T>
 {
+   private final Logger logger= LoggerFactory.getLogger(Variant.class);
    private final T o;
    private final Type type;
    private final String sig;
@@ -46,7 +48,7 @@ public final class Variant<T>
          throw new IllegalArgumentException(_("Can't wrap a multi-valued type in a Variant: ")+type);
          this.sig = ss[0];
       } catch (DBusException DBe) {
-         if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, DBe);
+         logger.debug("dbus exception: ", DBe);
          throw new IllegalArgumentException(MessageFormat.format(_("Can't wrap {0} in an unqualified Variant ({1})."), new Object[] { o.getClass(), DBe.getMessage() }));
       }
       this.o = o;
@@ -67,7 +69,7 @@ public final class Variant<T>
          throw new IllegalArgumentException(_("Can't wrap a multi-valued type in a Variant: ")+type);
          this.sig = ss[0];
       } catch (DBusException DBe) {
-         if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, DBe);
+         logger.debug("exception: ", DBe);
          throw new IllegalArgumentException(MessageFormat.format(_("Can't wrap {0} in an unqualified Variant ({1})."), new Object[] { type, DBe.getMessage() }));
       }
       this.o = o;
@@ -89,7 +91,7 @@ public final class Variant<T>
             throw new IllegalArgumentException(_("Can't wrap multiple or no types in a Variant: ")+sig);
          this.type = ts.get(0);
       } catch (DBusException DBe) {
-         if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, DBe);
+         logger.debug("exception: ", DBe);
          throw new IllegalArgumentException(MessageFormat.format(_("Can't wrap {0} in an unqualified Variant ({1})."), new Object[] { sig, DBe.getMessage() }));
       }
       this.o = o;

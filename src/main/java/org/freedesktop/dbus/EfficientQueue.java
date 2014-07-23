@@ -10,13 +10,15 @@
 */
 package org.freedesktop.dbus;
 
-import cx.ath.matthew.debug.Debug;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a Message queue which doesn't allocate objects
  * on insertion/removal. */
 class EfficientQueue
 {
+   private final Logger logger= LoggerFactory.getLogger(EfficientQueue.class);
    private Message[] mv;
    private int start;
    private int end;
@@ -28,7 +30,7 @@ class EfficientQueue
    }
    private void grow()
    {
-      if (Debug.debug) Debug.print(Debug.DEBUG, "Growing");
+      logger.debug("Growing");
       // create new vectors twice as long
       Message[] oldmv = mv;
       mv = new Message[oldmv.length*2];
@@ -62,7 +64,7 @@ class EfficientQueue
    }
    private void shrink()
    {
-      if (Debug.debug) Debug.print(Debug.DEBUG, "Shrinking");
+      logger.debug("Shrinking");
       if (null != mv && mv.length == init_size) return;
       // reset to original size
       mv = new Message[init_size];
@@ -71,7 +73,7 @@ class EfficientQueue
    }
    public void add(Message m)
    {
-      if (Debug.debug) Debug.print(Debug.DEBUG, "Enqueueing Message "+m);
+      logger.debug("Enqueueing Message "+m);
       // put this at the end
       mv[end] = m;
       // move the end
@@ -89,7 +91,7 @@ class EfficientQueue
       // set it as unused
       mv[pos] = null;
       if (start == (mv.length-1)) start = 0; else start++;
-      if (Debug.debug) Debug.print(Debug.DEBUG, "Dequeueing "+m);
+      logger.debug("Dequeueing "+m);
       return m;
    }
    public boolean isEmpty()

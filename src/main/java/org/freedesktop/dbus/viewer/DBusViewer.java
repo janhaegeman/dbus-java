@@ -10,9 +10,27 @@
 */
 package org.freedesktop.dbus.viewer;
 
-import static org.freedesktop.dbus.Gettext._;
+import org.freedesktop.DBus;
+import org.freedesktop.DBus.Introspectable;
+import org.freedesktop.dbus.DBusConnection;
+import org.freedesktop.dbus.UInt32;
+import org.freedesktop.dbus.exceptions.DBusException;
+import org.freedesktop.dbus.exceptions.DBusExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
-import java.awt.BorderLayout;
+import javax.swing.*;
+import javax.swing.table.TableModel;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -22,31 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTable;
-import javax.swing.SwingUtilities;
-import javax.swing.table.TableModel;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.freedesktop.DBus;
-import org.freedesktop.DBus.Introspectable;
-import org.freedesktop.dbus.DBusConnection;
-import org.freedesktop.dbus.UInt32;
-import org.freedesktop.dbus.exceptions.DBusException;
-import org.freedesktop.dbus.exceptions.DBusExecutionException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
+import static org.freedesktop.dbus.Gettext._;
 
 /**
  * A viewer for DBus
@@ -59,7 +53,7 @@ import org.xml.sax.SAXException;
 public class DBusViewer
 {
 	private static final Map<String, Integer> CONNECTION_TYPES = new HashMap<String, Integer>();
-
+    private final Logger logger= LoggerFactory.getLogger(DBusViewer.class);
 	static
 	{
 		CONNECTION_TYPES.put("System", DBusConnection.SYSTEM);
@@ -284,11 +278,17 @@ public class DBusViewer
 		private DBusConnection conn;
 		private DocumentBuilder builder;
 		private List<DBusEntry> result;
-		
+
 		ParsingContext(DBusConnection conn) {
 			this.conn = conn;
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-			try {
+            try {
+                factory.setValidating(false);
+                factory.setNamespaceAware(true);
+                factory.setFeature("http://xml.org/sax/features/namespaces", false);
+                factory.setFeature("http://xml.org/sax/features/validation", false);
+                factory.setFeature("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false);
+                factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 				builder = factory.newDocumentBuilder();
 			} catch (ParserConfigurationException e1) {
 				// TODO Auto-generated catch block
@@ -311,16 +311,22 @@ public class DBusViewer
 		}
 		
 		public void visitNode(String name, String path) throws DBusException, SAXException, IOException {
-			System.out.println("visit "+name+":"+path);
+
 			if ("/org/freedesktop/DBus/Local".equals(path)) {
 				// this will disconnects us.
 				return;
 			}
+            //ignore user based info
+            if (name.startsWith(":")) {
+                return;
+            }
+
+            logger.info("visit {}:{}",name,path);
 			DBusEntry e = addEntry(name, path);
 			String introspectData = e.getIntrospectable().Introspect();
 
 			
-		    Document document = builder.parse(new InputSource(new StringReader(introspectData.replace(DOC_TYPE, ""))));
+		    Document document = builder.parse(new InputSource(new StringReader(introspectData)));
 		    Element root = document.getDocumentElement();
 			
 		    NodeList children = root.getChildNodes();

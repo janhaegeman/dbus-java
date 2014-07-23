@@ -10,16 +10,20 @@
 */
 package org.freedesktop.dbus;
 
-import static org.freedesktop.dbus.Gettext._;
-
-import java.util.Vector;
+import cx.ath.matthew.utils.Hexdump;
 import org.freedesktop.dbus.exceptions.DBusException;
 import org.freedesktop.dbus.exceptions.MessageFormatException;
-import cx.ath.matthew.debug.Debug;
-import cx.ath.matthew.utils.Hexdump;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Vector;
+
+import static org.freedesktop.dbus.Gettext._;
 
 public class MethodCall extends Message
 {
+   private final Logger logger= LoggerFactory.getLogger(MethodCall.class);
+
    MethodCall() { }
    public MethodCall(String dest, String path, String iface, String member, byte flags, String sig, Object... args) throws DBusException
    {
@@ -56,7 +60,7 @@ public class MethodCall extends Message
       hargs.add(new Object[] { Message.HeaderField.MEMBER, new Object[] { ArgumentType. STRING_STRING, member } });
 
       if (null != sig) {
-         if (Debug.debug) Debug.print(Debug.DEBUG, "Appending arguments with signature: "+sig);
+         logger.debug("Appending arguments with signature: {}",sig);
          hargs.add(new Object[] { Message.HeaderField.SIGNATURE, new Object[] { ArgumentType.SIGNATURE_STRING, sig } });
          headers.put(Message.HeaderField.SIGNATURE,sig);
          setArgs(args);
@@ -69,9 +73,9 @@ public class MethodCall extends Message
 
       long c = bytecounter;
       if (null != sig) append(sig, args);
-      if (Debug.debug) Debug.print(Debug.DEBUG, "Appended body, type: "+sig+" start: "+c+" end: "+bytecounter+" size: "+(bytecounter-c));
+      logger.debug("Appended body, type: "+sig+" start: "+c+" end: "+bytecounter+" size: "+(bytecounter-c));
       marshallint(bytecounter-c, blen, 0, 4);
-      if (Debug.debug) Debug.print("marshalled size ("+blen+"): "+Hexdump.format(blen));
+      logger.debug("marshalled size ("+blen+"): "+Hexdump.format(blen));
    }
    private static long REPLY_WAIT_TIMEOUT = 20000;
    /**
@@ -95,7 +99,7 @@ public class MethodCall extends Message
     */
    public synchronized Message getReply(long timeout)
    {
-      if (Debug.debug) Debug.print(Debug.VERBOSE, "Blocking on "+this);
+      logger.debug("Blocking on "+this);
       if (null != reply) return reply;
       try {
          wait(timeout);
@@ -109,7 +113,7 @@ public class MethodCall extends Message
     */
    public synchronized Message getReply()
    {
-      if (Debug.debug) Debug.print(Debug.VERBOSE, "Blocking on "+this);
+      logger.debug("Blocking on "+this);
       if (null != reply) return reply;
       try {
          wait(REPLY_WAIT_TIMEOUT);
@@ -118,7 +122,7 @@ public class MethodCall extends Message
    }
    protected synchronized void setReply(Message reply)
    {
-      if (Debug.debug) Debug.print(Debug.VERBOSE, "Setting reply to "+this+" to "+reply);
+      logger.debug("Setting reply to "+this+" to "+reply);
       this.reply = reply;
       notifyAll();
    }

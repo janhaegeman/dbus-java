@@ -10,7 +10,8 @@
 */
 package org.freedesktop.dbus;
 
-import static org.freedesktop.dbus.Gettext._;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.text.MessageFormat;
@@ -19,10 +20,12 @@ import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 
-import cx.ath.matthew.debug.Debug;
+import static org.freedesktop.dbus.Gettext._;
 
 final class ArrayFrob
 {
+   private static final Logger logger= LoggerFactory.getLogger(ArrayFrob.class);
+
    static final Hashtable<Class<? extends Object>, Class<? extends Object>> primitiveToWrapper = new Hashtable<Class<? extends Object>, Class<? extends Object>>();
    static final Hashtable<Class<? extends Object>, Class<? extends Object>> wrapperToPrimitive = new Hashtable<Class<? extends Object>, Class<? extends Object>>();
    static {
@@ -157,7 +160,7 @@ final class ArrayFrob
             return type((Object[]) o, (Class<Object>) c.getComponentType());
       
       } catch (Exception e) {
-         if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, e);
+         logger.debug("exception", e);
          throw new IllegalArgumentException(e);
       }
 

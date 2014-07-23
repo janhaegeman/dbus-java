@@ -10,24 +10,26 @@
 */
 package org.freedesktop.dbus;
 
-import static org.freedesktop.dbus.Gettext._;
+import cx.ath.matthew.utils.Hexdump;
+import org.freedesktop.dbus.exceptions.DBusException;
+import org.freedesktop.dbus.exceptions.MessageProtocolVersionException;
+import org.freedesktop.dbus.exceptions.MessageTypeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.text.MessageFormat;
 
-import cx.ath.matthew.debug.Debug;
-import cx.ath.matthew.utils.Hexdump;
-
-import org.freedesktop.dbus.exceptions.DBusException;
-import org.freedesktop.dbus.exceptions.MessageTypeException;
-import org.freedesktop.dbus.exceptions.MessageProtocolVersionException;
+import static org.freedesktop.dbus.Gettext._;
 
 public final class MessageReader
 {
+   private final Logger logger= LoggerFactory.getLogger(MessageReader.class);
+
    private InputStream in;
    private byte[] buf = null;
    private byte[] tbuf = null;
@@ -51,7 +53,7 @@ public final class MessageReader
       }
       if (len[0] == 0) return null;
       if (len[0] < 12) {
-         if (Debug.debug) Debug.print(Debug.DEBUG, "Only got "+len[0]+" of 12 bytes of header");
+         logger.debug("Only got "+len[0]+" of 12 bytes of header");
          return null;
       }
 
@@ -73,7 +75,7 @@ public final class MessageReader
          len[1] += rv;
       }
       if (len[1] < 4) {
-         if (Debug.debug) Debug.print(Debug.DEBUG, "Only got "+len[1]+" of 4 bytes of header");
+         logger.debug("Only got "+len[1]+" of 4 bytes of header");
          return null;
       }
 
@@ -99,7 +101,7 @@ public final class MessageReader
          len[2] += rv;
       }
       if (len[2] < headerlen) {
-         if (Debug.debug) Debug.print(Debug.DEBUG, "Only got "+len[2]+" of "+headerlen+" bytes of header");
+         logger.debug("Only got "+len[2]+" of "+headerlen+" bytes of header");
          return null;
       }
 
@@ -114,7 +116,7 @@ public final class MessageReader
          len[3] += rv;
       }
       if (len[3] < body.length) {
-         if (Debug.debug) Debug.print(Debug.DEBUG, "Only got "+len[3]+" of "+body.length+" bytes of body");
+         logger.debug("Only got "+len[3]+" of "+body.length+" bytes of body");
          return null;
       }
 
@@ -135,32 +137,30 @@ public final class MessageReader
          default:
             throw new MessageTypeException(MessageFormat.format(_("Message type {0} unsupported"), new Object[] {type}));
       }
-      if (Debug.debug) {
-         Debug.print(Debug.VERBOSE, Hexdump.format(buf));
-         Debug.print(Debug.VERBOSE, Hexdump.format(tbuf));
-         Debug.print(Debug.VERBOSE, Hexdump.format(header));
-         Debug.print(Debug.VERBOSE, Hexdump.format(body));
+      if (logger.isDebugEnabled()) {
+         logger.debug("{}", Hexdump.format(buf));
+         logger.debug("{}", Hexdump.format(tbuf));
+         logger.debug("{}", Hexdump.format(header));
+         logger.debug("{}", Hexdump.format(body));
       }
       try {
          m.populate(buf, header, body);
       } catch (DBusException DBe) {
-         if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, DBe);
+         logger.debug("Dbus : ",DBe);
          buf = null;
          tbuf = null;
          body = null;
          header = null;
          throw DBe;
       } catch (RuntimeException Re) {
-         if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, Re);
+         logger.debug("Runtime: ",Re);
          buf = null;
          tbuf = null;
          body = null;
          header = null;
          throw Re;
       }
-      if (Debug.debug) {
-         Debug.print(Debug.INFO, "=> "+m);
-      }
+      logger.debug("=> {}",m);
       buf = null;
       tbuf = null;
       body = null;
@@ -169,7 +169,7 @@ public final class MessageReader
    }
    public void close() throws IOException
    {
-      if (Debug.debug) Debug.print(Debug.INFO, "Closing Message Reader");
+      logger.debug("Closing Message Reader");
       in.close();
    }
 }

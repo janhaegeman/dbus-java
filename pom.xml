@@ -17,7 +17,7 @@
   <groupId>org.freedesktop.dbus</groupId>
   <artifactId>dbus-java</artifactId>
   <packaging>jar</packaging>
-  <version>2.8-SNAPSHOT</version>
+  <version>2.7.0-SNAPSHOT</version>
   <name>Java D-Bus Implementation</name>
   <description>This library is a native Java implementation of the D-Bus protocol and not a wrapper around the C reference implementation</description>
   <url>http://dbus.freedesktop.org/</url>
@@ -28,8 +28,6 @@
     <artifactId>oss-parent</artifactId>
     <version>7</version>
   </parent>
-
-  <properties/>
 
   <prerequisites>
     <maven>3.0.0</maven>
@@ -84,7 +82,9 @@
       <unsubscribe>http://lists.freedesktop.org/mailman/options/dbus</unsubscribe>
     </mailingList>
   </mailingLists>
-
+    <properties>
+        <slf4j.version>1.7.4</slf4j.version>
+    </properties>
   <build>
     <plugins>
       <plugin>
@@ -107,6 +107,36 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
       </plugin>
+        <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>1.2.1</version>
+            <executions>
+                <execution>
+                    <id>make</id>
+                    <phase>process-classes</phase>
+                    <goals>
+                        <goal>exec</goal>
+                    </goals>
+                </execution>
+                <execution>
+                    <id>make-clean</id>
+                    <phase>clean</phase>
+                    <goals>
+                        <goal>exec</goal>
+                    </goals>
+                    <configuration>
+                        <arguments>
+                            <argument>clean</argument>
+                        </arguments>
+                    </configuration>
+                </execution>
+            </executions>
+            <configuration>
+                <workingDirectory>${basedir}/src/main/native</workingDirectory>
+                <executable>make</executable>
+            </configuration>
+        </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
@@ -181,7 +211,18 @@
   </build>
 
   <dependencies>
-    <dependency>
+      <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+          <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-simple</artifactId>
+          <version>${slf4j.version}</version>
+      </dependency>
+
+      <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
     </dependency>

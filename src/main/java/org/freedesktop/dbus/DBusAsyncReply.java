@@ -10,24 +10,26 @@
 */
 package org.freedesktop.dbus;
 
-import static org.freedesktop.dbus.Gettext._;
+import org.freedesktop.DBus.Error.NoReply;
+import org.freedesktop.dbus.exceptions.DBusException;
+import org.freedesktop.dbus.exceptions.DBusExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.freedesktop.DBus.Error.NoReply;
-import org.freedesktop.dbus.exceptions.DBusException;
-import org.freedesktop.dbus.exceptions.DBusExecutionException;
-
-import cx.ath.matthew.debug.Debug;
+import static org.freedesktop.dbus.Gettext._;
 
 /**
  * A handle to an asynchronous method call.
  */
 public class DBusAsyncReply<ReturnType>
 {
+    private Logger logger= LoggerFactory.getLogger(DBusAsyncReply.class);
+
    /**
     * Check if any of a set of asynchronous calls have had a reply.
     * @param replies A Collection of handles to replies to check.
@@ -66,7 +68,7 @@ public class DBusAsyncReply<ReturnType>
             } catch (DBusExecutionException DBEe) {
                error = DBEe;
             } catch (DBusException DBe) {
-               if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, DBe);
+               logger.error("DBus Exception: ",DBe);
                error = new DBusExecutionException(DBe.getMessage());
             }
          }

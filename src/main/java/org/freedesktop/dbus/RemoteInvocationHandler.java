@@ -10,25 +10,22 @@
 */
 package org.freedesktop.dbus;
 
-import static org.freedesktop.dbus.Gettext._;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.Type;
-import java.text.MessageFormat;
-import java.util.Arrays;
-
 import org.freedesktop.DBus;
 import org.freedesktop.dbus.exceptions.DBusException;
 import org.freedesktop.dbus.exceptions.DBusExecutionException;
 import org.freedesktop.dbus.exceptions.NotConnected;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import cx.ath.matthew.debug.Debug;
+import java.lang.reflect.*;
+import java.text.MessageFormat;
+import java.util.Arrays;
+
+import static org.freedesktop.dbus.Gettext._;
 
 final class RemoteInvocationHandler implements InvocationHandler
 {
+   private static final Logger logger= LoggerFactory.getLogger(RemoteInvocationHandler.class);
    public static final int CALL_TYPE_SYNC = 0;
    public static final int CALL_TYPE_ASYNC = 1;
    public static final int CALL_TYPE_CALLBACK = 2;
@@ -40,13 +37,13 @@ final class RemoteInvocationHandler implements InvocationHandler
          if(null == c || Void.TYPE.equals(c)) return null;
          else throw new DBusExecutionException(_("Wrong return type (got void, expected a value)"));
       } else {
-         try { 
-            if (Debug.debug) Debug.print(Debug.VERBOSE, "Converting return parameters from "+Arrays.deepToString(rp)+" to type "+m.getGenericReturnType());
+         try {
+            logger.trace("Converting return parameters from "+Arrays.deepToString(rp)+" to type "+m.getGenericReturnType());
             rp = Marshalling.deSerializeParameters(rp, 
                   new Type[] { m.getGenericReturnType() }, conn);
          }
-         catch (Exception e) { 
-            if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, e);
+         catch (Exception e) {
+            logger.debug("exception", e);
             throw new DBusExecutionException(MessageFormat.format(_("Wrong return type (failed to de-serialize correct types: {0} )"), new Object[] { e.getMessage() }));
          }
       }
@@ -68,7 +65,7 @@ final class RemoteInvocationHandler implements InvocationHandler
             try {
                return cons.newInstance(rp);
             } catch (Exception e) {
-               if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, e);
+                logger.info("Flushing outbound queue and quitting");
                throw new DBusException(e.getMessage());
             }
       }
@@ -104,7 +101,7 @@ final class RemoteInvocationHandler implements InvocationHandler
                call = new MethodCall(ro.busname, ro.objectpath, AbstractConnection.dollar_pattern.matcher(ro.iface.getName()).replaceAll("."), name, flags, sig, args);
          }
       } catch (DBusException DBe) {
-         if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, DBe);
+         logger.debug("Dbus exception: ", DBe);
          throw new DBusExecutionException(_("Failed to construct outgoing method call: ")+DBe.getMessage());
       }
       if (null == conn.outgoing) throw new NotConnected(_("Not Connected"));
@@ -115,7 +112,7 @@ final class RemoteInvocationHandler implements InvocationHandler
             return new DBusAsyncReply(call, m, conn);
          case CALL_TYPE_CALLBACK:
              synchronized (conn.pendingCallbacks) {
-                if (Debug.debug) Debug.print(Debug.VERBOSE, "Queueing Callback "+callback+" for "+call);
+                logger.debug("Queueing Callback "+callback+" for "+call);
                 conn.pendingCallbacks.put(call, callback);
                 conn.pendingCallbackReplys.put(call, new DBusAsyncReply(call, m, conn));
              }
@@ -138,7 +135,7 @@ final class RemoteInvocationHandler implements InvocationHandler
       try {
          return convertRV(reply.getSig(), reply.getParameters(), m, conn);
       } catch (DBusException e) {
-         if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, e);
+         logger.debug("Dbus exception:", e);
          throw new DBusExecutionException(e.getMessage());
       }
    }

@@ -10,35 +10,26 @@
 */
 package org.freedesktop.dbus;
 
-import static org.freedesktop.dbus.Gettext._;
-
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
-
 import org.freedesktop.dbus.exceptions.DBusException;
 import org.freedesktop.dbus.types.DBusListType;
 import org.freedesktop.dbus.types.DBusMapType;
 import org.freedesktop.dbus.types.DBusStructType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import cx.ath.matthew.debug.Debug;
+import java.lang.reflect.*;
+import java.text.MessageFormat;
+import java.util.*;
+
+import static org.freedesktop.dbus.Gettext._;
 
 /**
  * Contains static methods for marshalling values.
  */
 public final class Marshalling
 {
+   private static final Logger logger= LoggerFactory.getLogger(Marshalling.class);
+
    private static Map<Type, String[]> typeCache = new HashMap<Type, String[]>();
    /**
     * Will return the DBus type corresponding to the given Java type.
@@ -145,7 +136,7 @@ public final class Marshalling
                if (s.length != 1) throw new DBusException(_("Multi-valued array types not permitted"));
                out[level].append(s[0]);
             } catch (ArrayIndexOutOfBoundsException AIOOBe) {
-               if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, AIOOBe);
+               logger.error("exception: ", AIOOBe);
                throw new DBusException(_("Map must have 2 parameters"));
             }
             out[level].append('}');
@@ -195,9 +186,9 @@ public final class Marshalling
       else if (c.equals(UInt64.class)) out[level].append((char) Message.ArgumentType.UINT64);
       else if (c.equals(Double.class)) out[level].append((char) Message.ArgumentType.DOUBLE);
       else if (c.equals(Double.TYPE)) out[level].append((char) Message.ArgumentType.DOUBLE);
-      else if (c.equals(Float.class) && AbstractConnection.FLOAT_SUPPORT) out[level].append((char) Message.ArgumentType.FLOAT);
+      //else if (c.equals(Float.class) && AbstractConnection.FLOAT_SUPPORT) out[level].append((char) Message.ArgumentType.FLOAT);
       else if (c.equals(Float.class)) out[level].append((char) Message.ArgumentType.DOUBLE);
-      else if (c.equals(Float.TYPE) && AbstractConnection.FLOAT_SUPPORT) out[level].append((char) Message.ArgumentType.FLOAT);
+      //else if (c.equals(Float.TYPE) && AbstractConnection.FLOAT_SUPPORT) out[level].append((char) Message.ArgumentType.FLOAT);
       else if (c.equals(Float.TYPE)) out[level].append((char) Message.ArgumentType.DOUBLE);
       else if (c.equals(String.class)) out[level].append((char) Message.ArgumentType.STRING);
       else if (c.equals(Variant.class)) out[level].append((char) Message.ArgumentType.VARIANT);
@@ -241,7 +232,7 @@ public final class Marshalling
          throw new DBusException(_("Exporting non-exportable type ")+c);
       }
 
-      if (Debug.debug) Debug.print(Debug.VERBOSE, "Converted Java type: "+c+" to D-Bus Type: "+out[level]);
+      logger.trace("Converted Java type: "+c+" to D-Bus Type: "+out[level]);
 
       return new String[] { out[level].toString() };
    }
@@ -339,7 +330,7 @@ public final class Marshalling
             }
          return i;
       } catch (IndexOutOfBoundsException IOOBe) {
-         if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, IOOBe);
+         logger.debug("exception", IOOBe);
          throw new DBusException(_("Failed to parse DBus type signature: ")+dbus);
       }
    }
@@ -355,7 +346,7 @@ public final class Marshalling
    {
       if (null == parameters) return null;
       for (int i = 0; i < parameters.length; i++) {
-         if (Debug.debug) Debug.print(Debug.VERBOSE,"Converting "+i+" from "+parameters[i]+" to "+types[i]);
+         logger.trace("Converting "+i+" from "+parameters[i]+" to "+types[i]);
          if (null == parameters[i]) continue;
 
          if (parameters[i] instanceof DBusSerializable) {
@@ -388,7 +379,7 @@ public final class Marshalling
             System.arraycopy(newparams, 0, exparams, i, newparams.length);
             System.arraycopy(parameters, i+1, exparams, i+newparams.length, parameters.length-i-1);
             parameters = exparams;
-            if (Debug.debug) Debug.print(Debug.VERBOSE, "New params: "+Arrays.deepToString(parameters)+" new types: "+Arrays.deepToString(types));
+            logger.trace("New params: "+Arrays.deepToString(parameters)+" new types: "+Arrays.deepToString(types));
             i--;
          } else if (types[i] instanceof TypeVariable &&
                !(parameters[i] instanceof Variant)) 
@@ -402,7 +393,7 @@ public final class Marshalling
    @SuppressWarnings("unchecked")
    static Object deSerializeParameter(Object parameter, Type type, AbstractConnection conn) throws Exception
    {
-      if (Debug.debug) Debug.print(Debug.VERBOSE, "Deserializing from "+parameter.getClass()+" to "+type.getClass());
+      logger.trace("Deserializing from "+parameter.getClass()+" to "+type.getClass());
       if (null == parameter) 
          return null;
 
@@ -436,7 +427,7 @@ public final class Marshalling
       if (parameter instanceof Object[] && 
             type instanceof Class &&
             Struct.class.isAssignableFrom((Class) type)) {
-         if (Debug.debug) Debug.print(Debug.VERBOSE, "Creating Struct "+type+" from "+parameter);
+         logger.trace("Creating Struct "+type+" from "+parameter);
          Type[] ts = Container.getTypeCache(type);
          if (null == ts) {
             Field[] fs = ((Class) type).getDeclaredFields();
@@ -519,7 +510,7 @@ public final class Marshalling
          }
       }
       if (parameter instanceof DBusMap) {
-			if (Debug.debug) Debug.print(Debug.VERBOSE, "Deserializing a Map");
+            logger.trace("Deserializing a Map");
 			DBusMap dmap = (DBusMap) parameter;
 			Type[] maptypes = ((ParameterizedType) type).getActualTypeArguments();
 			for (int i = 0; i < dmap.entries.length; i++) {
@@ -531,7 +522,7 @@ public final class Marshalling
    }
    static List<Object> deSerializeParameters(List<Object> parameters, Type type, AbstractConnection conn) throws Exception
    {
-      if (Debug.debug) Debug.print(Debug.VERBOSE, "Deserializing from "+parameters+" to "+type);
+      logger.trace( "Deserializing from "+parameters+" to "+type);
       if (null == parameters) return null;
       for (int i = 0; i < parameters.size(); i++) {
          if (null == parameters.get(i)) continue;
@@ -567,7 +558,7 @@ public final class Marshalling
    @SuppressWarnings("unchecked")
    static Object[] deSerializeParameters(Object[] parameters, Type[] types, AbstractConnection conn) throws Exception
    {
-      if (Debug.debug) Debug.print(Debug.VERBOSE, "Deserializing from "+Arrays.deepToString(parameters)+" to "+Arrays.deepToString(types));
+      logger.trace("Deserializing from "+Arrays.deepToString(parameters)+" to "+Arrays.deepToString(types));
       if (null == parameters) return null;
 
       if (types.length == 1 && types[0] instanceof ParameterizedType
@@ -578,11 +569,9 @@ public final class Marshalling
       for (int i = 0; i < parameters.length; i++) {
          // CHECK IF ARRAYS HAVE THE SAME LENGTH <-- has to happen after expanding parameters
          if (i >= types.length) {
-            if (Debug.debug) {
                for (int j = 0; j < parameters.length; j++) {
-                  Debug.print(Debug.ERR, String.format("Error, Parameters difference (%1d, '%2s')", j, parameters[j].toString()));
+                  logger.error(String.format("Error, Parameters difference (%1d, '%2s')", j, parameters[j].toString()));
                }
-            }
             throw new DBusException(_("Error deserializing message: number of parameters didn't match receiving signature"));
          }
          if (null == parameters[i]) continue;
@@ -611,7 +600,8 @@ public final class Marshalling
                      System.arraycopy(parameters, i + newtypes.length, compress, i+1, parameters.length - i - newtypes.length);
                      parameters = compress;
                   } catch (ArrayIndexOutOfBoundsException AIOOBe) {
-                     if (AbstractConnection.EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, AIOOBe);
+                     logger.debug("exception", AIOOBe);
+
                      throw new DBusException(MessageFormat.format(_("Not enough elements to create custom object from serialized data ({0} < {1})."), 
                                  new Object[] { parameters.length-i, newtypes.length }));
                   }

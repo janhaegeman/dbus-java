@@ -10,21 +10,21 @@
 */
 package org.freedesktop.dbus;
 
-import static org.freedesktop.dbus.Gettext._;
+import org.freedesktop.DBus;
+import org.freedesktop.dbus.exceptions.DBusException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Proxy;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Proxy;
 import java.net.ServerSocket;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.Random;
 import java.util.Vector;
 
-import org.freedesktop.DBus;
-import org.freedesktop.dbus.exceptions.DBusException;
-
-import cx.ath.matthew.debug.Debug;
+import static org.freedesktop.dbus.Gettext._;
 
 /** Handles a peer to peer connection between two applications withou a bus daemon.
  * <p>
@@ -33,6 +33,7 @@ import cx.ath.matthew.debug.Debug;
  */
 public final class DirectConnection extends AbstractConnection
 {
+   private static final Logger logger= LoggerFactory.getLogger(DirectConnection.class);
    /**
     * Create a direct connection to another application.
     * @param address The address to connect to. This is a standard D-Bus address, except that the additional parameter 'listen=true' should be added in the application which is creating the socket.
@@ -45,10 +46,10 @@ public final class DirectConnection extends AbstractConnection
          transport = new Transport(addr, AbstractConnection.TIMEOUT);
 			connected = true;
       } catch (IOException IOe) {
-         if (EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, IOe);            
+         logger.debug("ioexception", IOe);
          throw new DBusException(_("Failed to connect to bus ")+IOe.getMessage());
       } catch (ParseException Pe) {
-         if (EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, Pe);            
+         logger.debug("exception", Pe);
          throw new DBusException(_("Failed to connect to bus ")+Pe.getMessage());
       }
 
@@ -74,7 +75,7 @@ public final class DirectConnection extends AbstractConnection
       }
       address += ",port="+port;
       address += ",guid="+Transport.genGUID();
-      if (Debug.debug) Debug.print("Created Session address: "+address);
+      logger.debug("Created Session address: "+address);
       return address;
    }
 
@@ -92,11 +93,11 @@ public final class DirectConnection extends AbstractConnection
          for (int i = 0; i < 10; i++) 
             sb.append((char) ((Math.abs(r.nextInt()) % 26) + 65));
          path = path.replaceAll("..........$", sb.toString());
-         if (Debug.debug) Debug.print(Debug.VERBOSE, "Trying path "+path);
+         logger.trace( "Trying path "+path);
       } while ((new File(path)).exists());
       address += "abstract="+path;
       address += ",guid="+Transport.genGUID();
-      if (Debug.debug) Debug.print("Created Session address: "+address);
+      logger.debug("Created Session address: "+address);
       return address;
    }
    DBusInterface dynamicProxy(String path) throws DBusException
@@ -138,7 +139,7 @@ public final class DirectConnection extends AbstractConnection
          importedObjects.put(newi, ro);
          return newi;
       } catch (Exception e) {
-         if (EXCEPTION_DEBUG && Debug.debug) Debug.print(Debug.ERR, e);
+         logger.debug("exception", e);
          throw new DBusException(MessageFormat.format(_("Failed to create proxy object for {0}; reason: {1}."), new Object[] { path, e.getMessage()}));
       }
    }
