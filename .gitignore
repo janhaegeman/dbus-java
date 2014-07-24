@@ -2,11 +2,11 @@ Java classes
 *.class
 
 # Output directories
-bin/
 build/
 target/
 
-# Eclipse
+# Eclipse / idea
+.idea
 .project
 .classpath
 .settings/
