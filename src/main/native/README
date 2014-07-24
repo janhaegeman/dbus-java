@@ -1,0 +1,16 @@
+libmatthew-java v0.1
+--------------------
+
+These are a selection of libraries for Java which I have written because they
+are useful and not provided with normal Java. They are available for download
+here and are licensed under the GPL or LGPL. They all come with example
+applications using the libraries. 
+
+The ones I consider distribution-worthy are packaged up together. Several other
+classes are available separately below. 
+
+Unix Sockets Library
+
+This is a collection of classes and native code to allow you to read and write
+Unix sockets in Java. 
+
