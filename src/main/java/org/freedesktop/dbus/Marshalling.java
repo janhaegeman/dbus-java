@@ -137,7 +137,7 @@ public final class Marshalling
                out[level].append(s[0]);
             } catch (ArrayIndexOutOfBoundsException AIOOBe) {
                logger.error("exception: ", AIOOBe);
-               throw new DBusException(_("Map must have 2 parameters"));
+               throw new DBusException(_("Map must have 2 parameters"),AIOOBe);
             }
             out[level].append('}');
          }
@@ -232,7 +232,7 @@ public final class Marshalling
          throw new DBusException(_("Exporting non-exportable type ")+c);
       }
 
-      logger.trace("Converted Java type: "+c+" to D-Bus Type: "+out[level]);
+      logger.trace("Converted Java type: {} to D-Bus Type: {}",c,out[level]);
 
       return new String[] { out[level].toString() };
    }
@@ -331,7 +331,7 @@ public final class Marshalling
          return i;
       } catch (IndexOutOfBoundsException IOOBe) {
          logger.debug("exception", IOOBe);
-         throw new DBusException(_("Failed to parse DBus type signature: ")+dbus);
+         throw new DBusException(_("Failed to parse DBus type signature: ")+dbus,IOOBe);
       }
    }
    /**
@@ -346,7 +346,9 @@ public final class Marshalling
    {
       if (null == parameters) return null;
       for (int i = 0; i < parameters.length; i++) {
-         logger.trace("Converting "+i+" from "+parameters[i]+" to "+types[i]);
+         if (logger.isTraceEnabled()) {
+             logger.trace("Converting {} from {} to {}", i, parameters[i], types[i]);
+         }
          if (null == parameters[i]) continue;
 
          if (parameters[i] instanceof DBusSerializable) {
@@ -379,7 +381,9 @@ public final class Marshalling
             System.arraycopy(newparams, 0, exparams, i, newparams.length);
             System.arraycopy(parameters, i+1, exparams, i+newparams.length, parameters.length-i-1);
             parameters = exparams;
-            logger.trace("New params: "+Arrays.deepToString(parameters)+" new types: "+Arrays.deepToString(types));
+            if (logger.isTraceEnabled()) {
+                logger.trace("New params: {} new types: {}", Arrays.deepToString(parameters),Arrays.deepToString(types));
+            }
             i--;
          } else if (types[i] instanceof TypeVariable &&
                !(parameters[i] instanceof Variant)) 
@@ -393,7 +397,7 @@ public final class Marshalling
    @SuppressWarnings("unchecked")
    static Object deSerializeParameter(Object parameter, Type type, AbstractConnection conn) throws Exception
    {
-      logger.trace("Deserializing from "+parameter.getClass()+" to "+type.getClass());
+      logger.trace("Deserializing from {} to {}",parameter.getClass(),type.getClass());
       if (null == parameter) 
          return null;
 
@@ -427,7 +431,7 @@ public final class Marshalling
       if (parameter instanceof Object[] && 
             type instanceof Class &&
             Struct.class.isAssignableFrom((Class) type)) {
-         logger.trace("Creating Struct "+type+" from "+parameter);
+         logger.trace("Creating Struct {} from {}",type,parameter);
          Type[] ts = Container.getTypeCache(type);
          if (null == ts) {
             Field[] fs = ((Class) type).getDeclaredFields();
@@ -522,7 +526,7 @@ public final class Marshalling
    }
    static List<Object> deSerializeParameters(List<Object> parameters, Type type, AbstractConnection conn) throws Exception
    {
-      logger.trace( "Deserializing from "+parameters+" to "+type);
+      logger.trace( "Deserializing from {} to {}",parameters,type);
       if (null == parameters) return null;
       for (int i = 0; i < parameters.size(); i++) {
          if (null == parameters.get(i)) continue;
@@ -558,7 +562,9 @@ public final class Marshalling
    @SuppressWarnings("unchecked")
    static Object[] deSerializeParameters(Object[] parameters, Type[] types, AbstractConnection conn) throws Exception
    {
-      logger.trace("Deserializing from "+Arrays.deepToString(parameters)+" to "+Arrays.deepToString(types));
+      if (logger.isTraceEnabled()) {
+          logger.trace("Deserializing from {} to {}",Arrays.deepToString(parameters) , Arrays.deepToString(types));
+      }
       if (null == parameters) return null;
 
       if (types.length == 1 && types[0] instanceof ParameterizedType
@@ -603,7 +609,7 @@ public final class Marshalling
                      logger.debug("exception", AIOOBe);
 
                      throw new DBusException(MessageFormat.format(_("Not enough elements to create custom object from serialized data ({0} < {1})."), 
-                                 new Object[] { parameters.length-i, newtypes.length }));
+                                 new Object[] { parameters.length-i, newtypes.length }),AIOOBe);
                   }
                }
          } else

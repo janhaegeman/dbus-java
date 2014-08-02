@@ -160,7 +160,7 @@ final class ArrayFrob
             return type((Object[]) o, (Class<Object>) c.getComponentType());
       
       } catch (Exception e) {
-         logger.debug("exception", e);
+         logger.error("convert: ", e);
          throw new IllegalArgumentException(e);
       }
 

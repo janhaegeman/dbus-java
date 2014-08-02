@@ -61,6 +61,11 @@ import java.util.Properties;
    if (Debug.debug) Debug.print(Debug.INFO, "Debug Message");
   </pre>
   */
+
+/*
+ * Replaced by SLF4J which better integrates with outer java lib and logging frameworks.
+ */
+@Deprecated
 public class Debug
 {
    /**

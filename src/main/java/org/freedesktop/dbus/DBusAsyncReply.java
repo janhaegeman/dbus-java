@@ -69,7 +69,7 @@ public class DBusAsyncReply<ReturnType>
                error = DBEe;
             } catch (DBusException DBe) {
                logger.error("DBus Exception: ",DBe);
-               error = new DBusExecutionException(DBe.getMessage());
+               error = new DBusExecutionException(DBe.getMessage(),DBe);
             }
          }
       }

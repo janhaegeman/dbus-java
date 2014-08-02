@@ -38,22 +38,24 @@ public final class MessageWriter
    }
    public void writeMessage(Message m) throws IOException
    {
-      logger.info("<= "+m);
+      logger.debug("<= {}",m);
       if (null == m) return;
       if (null == m.getWireData()) {
-         logger.warn("Message "+m+" wire-data was null!");
+         logger.warn("Message {} wire-data was null!",m);
          return;
       }
       if (isunix) {
-          logger.debug("Writing all "+m.getWireData().length+" buffers simultaneously to Unix Socket");
+          logger.debug("Writing all {} buffers simultaneously to Unix Socket",m.getWireData().length);
           if (logger.isTraceEnabled()) {
                 for (byte[] buf: m.getWireData())
-                   logger.trace( "("+buf+"):"+ (null==buf? "": Hexdump.format(buf)));
+                   logger.trace( "( {} ): {}",buf,(null==buf? "": Hexdump.format(buf)));
           }
          ((USOutputStream) out).write(m.getWireData());
       } else
          for (byte[] buf: m.getWireData()) {
-            logger.trace("("+buf+"):"+ (null==buf? "": Hexdump.format(buf)));
+            if (logger.isTraceEnabled()) {
+                logger.trace("( {} ): {}",buf,(null == buf ? "" : Hexdump.format(buf)));
+            }
             if (null == buf) break;
             out.write(buf);
          }

@@ -26,11 +26,11 @@ public class BusAddress
    public BusAddress(String address) throws ParseException
    {
       if (null == address || "".equals(address)) throw new ParseException(_("Bus address is blank"), 0);
-      logger.debug("Parsing bus address: "+address);
+      logger.trace("Parsing bus address: {}",address);
       String[] ss = address.split(":", 2);
       if (ss.length < 2) throw new ParseException(_("Bus address is invalid: ")+address, 0);
       type = ss[0];
-      logger.info("Transport type: "+type);
+      logger.trace("Transport type: {}",type);
       String[] ps = ss[1].split(",");
       parameters = new HashMap<String,String>();
       for (String p: ps) {

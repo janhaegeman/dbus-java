@@ -17,4 +17,5 @@ public class FatalDBusException extends DBusException implements FatalException
    {
       super(message);
    }
+   public FatalDBusException(String message,Exception e) { super(message,e);}
 }

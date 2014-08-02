@@ -750,7 +750,7 @@ public final class Transport
    }
    public void connect(BusAddress address, int timeout) throws IOException
    {
-      logger.info("Connecting to "+address);
+      logger.info("Connecting to {}",address);
       OutputStream out = null;
       InputStream in = null;
       UnixSocket us = null;
@@ -801,14 +801,14 @@ public final class Transport
          throw new IOException(_("Failed to auth"));
       }
       if (null != us) {
-         logger.trace("Setting timeout to "+timeout+" on Socket");
+         logger.debug("Setting unix socket timeout to {}",timeout);
          if (timeout == 1)
             us.setBlocking(false);
          else
             us.setSoTimeout(timeout);
       }
       if (null != s) {
-         logger.trace("Setting timeout to "+timeout+" on Socket");
+         logger.trace("Setting socket timeout to {}",timeout);
          s.setSoTimeout(timeout);
       }
       mout = new MessageWriter(out);

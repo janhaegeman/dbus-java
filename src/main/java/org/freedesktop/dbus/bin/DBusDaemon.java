@@ -129,7 +129,6 @@ public class DBusDaemon extends Thread
       public boolean isRemote() { return false; }
       public String Hello() 
       {
-         logger.debug("enter");
          synchronized (c) {
             if (null != c.unique) 
                throw new org.freedesktop.DBus.Error.AccessDenied(_("Connection has already sent a Hello message"));
@@ -141,7 +140,7 @@ public class DBusDaemon extends Thread
             names.put(c.unique, c);
          }
 
-         logger.warn("Client "+c.unique+" registered");
+         logger.info("Client {} registered",c.unique);
 
          try {
             send(c, new DBusSignal("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "NameAcquired", "s", c.unique));
@@ -150,41 +149,34 @@ public class DBusDaemon extends Thread
          } catch (DBusException DBe) {
             logger.debug("exception:", DBe);
          }
-         logger.debug("exit");
          return c.unique;
       }
       public String[] ListNames()
       {
-         logger.debug("enter");
          String[] ns;
          synchronized (names) {
             Set<String> nss = names.keySet();
             ns = nss.toArray(new String[0]);
          }
-         logger.debug("exit");
          return ns;
       } 
 
       public boolean NameHasOwner(String name)
       {
-         logger.debug("enter");
          boolean rv;
          synchronized (names) {
             rv = names.containsKey(name);
          }
-         logger.debug("exit");
          return rv;
       }
       public String GetNameOwner(String name)
       {
-         logger.debug("enter");
          Connstruct owner = names.get(name);
          String o;
          if (null == owner) 
             o = "";
          else
             o = owner.unique;
-         logger.debug("exit");
          return o;
       } 
 
@@ -200,8 +192,6 @@ public class DBusDaemon extends Thread
       }
       public UInt32 RequestName(String name, UInt32 flags)
       {
-         logger.debug("enter");
-         
          boolean exists = false;
          synchronized (names) {
             if (!(exists = names.containsKey(name)))
@@ -212,7 +202,7 @@ public class DBusDaemon extends Thread
          if (exists) {
             rv = DBus.DBUS_REQUEST_NAME_REPLY_EXISTS;
          } else {
-            logger.warn("Client "+c.unique+" acquired name "+name);
+            logger.warn("Client {} acquired name {}",c.unique,name);
             rv = DBus.DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER;
             try {
                send(c, new DBusSignal("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "NameAcquired", "s", name));
@@ -221,14 +211,11 @@ public class DBusDaemon extends Thread
                logger.debug("exception: ", DBe);
             }
          }
-         logger.debug("exit");
          return new UInt32(rv);
       }
 
       public UInt32 ReleaseName(String name)
       {
-         logger.debug("enter");
- 
          boolean exists = false;
          synchronized (names) {
             if ((exists = (names.containsKey(name) && names.get(name).equals(c))))
@@ -239,7 +226,7 @@ public class DBusDaemon extends Thread
          if (!exists) {
             rv = DBus.DBUS_RELEASE_NAME_REPLY_NON_EXISTANT;
          } else {
-            logger.warn("Client "+c.unique+" acquired name "+name);
+            logger.info("Client {} qcquired name {}",c.unique,name);
             rv = DBus.DBUS_RELEASE_NAME_REPLY_RELEASED;
             try {
                send(c, new DBusSignal("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "NameLost", "s", name));
@@ -248,18 +235,16 @@ public class DBusDaemon extends Thread
                logger.error("exception:", DBe);
             }
          }
-         logger.debug("exit");
          return new UInt32(rv);
       }
+
       public void AddMatch(String matchrule) throws Error.MatchRuleInvalid
       {
-         logger.debug("enter");
-         logger.trace("Adding match rule: "+matchrule);
+         logger.debug("Adding match rule: {}",matchrule);
          synchronized (sigrecips) {
             if (!sigrecips.contains(c))
                sigrecips.add(c);
          }
-         logger.debug("exit");
          return;
       }
       public void RemoveMatch(String matchrule) throws Error.MatchRuleInvalid
@@ -300,8 +285,7 @@ public class DBusDaemon extends Thread
       @SuppressWarnings("unchecked")
       private void handleMessage(Connstruct c, Message m) throws DBusException
       {
-         logger.debug("enter");
-         logger.trace("Handling message "+m+" from "+c.unique);
+         logger.trace("Handling message {} from {}",m,c.unique);
          if (!(m instanceof MethodCall)) return;
          Object[] args = m.getParameters();
 
@@ -338,8 +322,6 @@ public class DBusDaemon extends Thread
          } catch (NoSuchMethodException NSMe) {
             send(c,new org.freedesktop.dbus.Error("org.freedesktop.DBus", c.unique, "org.freedesktop.DBus.Error.UnknownMethod", m.getSerial(), "s", _("This service does not support ")+m.getName()));
          }
-
-         logger.debug("exit");
       }
       public String Introspect()
       {
@@ -425,7 +407,7 @@ public class DBusDaemon extends Thread
 
       public void run()
       {
-         logger.info("enter");
+         logger.info("run...");
          while (_run) {
             Message m;
             List<WeakReference<Connstruct>> wcs;
@@ -441,14 +423,14 @@ public class DBusDaemon extends Thread
 					for (WeakReference<Connstruct> wc: wcs) {
 						Connstruct c = wc.get();
 						if (null != c) {
-                            logger.trace( "<localqueue> Got message "+m+" from "+c);
+                            logger.trace( "<localqueue> Got message {} from {}",m,c);
 							handleMessage(c, m);
 						}
 					}
             } catch (DBusException DBe) {
                logger.error("dbus exception: ", DBe);
             }
-            logger.info("Discarding "+m+" connection reaped");
+            logger.info("Discarding {} connection reaped",m);
          }
          logger.debug("exit");
       }
@@ -515,7 +497,7 @@ public class DBusDaemon extends Thread
       }
       public void run()
       {
-         logger.debug("enter");
+         logger.debug("run...");
          while (_run && _lrun) {
 
             Message m = null;
@@ -531,7 +513,7 @@ public class DBusDaemon extends Thread
             }
 
             if (null != m) {
-               logger.info("Read "+m+" from "+conn.unique);
+               logger.info("Read {} from {}",m,conn.unique);
                synchronized (inqueue) {
                   inqueue.putLast(m, weakconn);
                   inqueue.notifyAll();
@@ -569,11 +551,10 @@ public class DBusDaemon extends Thread
    }
    private void send(Connstruct c, Message m, boolean head)
    {
-       logger.debug("enter");
          if (null == c)
-            logger.trace("Queing message "+m+" for all connections");
+            logger.trace("Queing message {} for all connections",m);
          else
-            logger.trace("Queing message "+m+" for "+c.unique);
+            logger.trace("Queing message {} for {}",m,c.unique);
       // send to all connections
       if (null == c) {
          synchronized (conns) {
@@ -595,23 +576,21 @@ public class DBusDaemon extends Thread
             outqueue.notifyAll();
          }
       }
-      logger.debug( "exit");
    }
+
    @SuppressWarnings("unchecked")
    private List<Connstruct> findSignalMatches(DBusSignal sig)
    {
-      logger.debug("enter");
       List<Connstruct> l;
       synchronized (sigrecips) {
          l = new Vector<Connstruct>(sigrecips);
       }
-      logger.debug("exit");
       return l;
    }
    @SuppressWarnings("unchecked")
    public void run()
    {
-      logger.info("enter");
+      logger.info("running...");
       while (_run) {
             try {
                Message m;
@@ -628,7 +607,7 @@ public class DBusDaemon extends Thread
 						for (WeakReference<Connstruct> wc: wcs) {
 							Connstruct c = wc.get();
 							if (null != c) {
-                                logger.info("<inqueue> Got message "+m+" from "+c.unique);
+                                logger.info("<inqueue> Got message {} from {}",m,c.unique);
 								// check if they have hello'd
 								if (null == c.unique 
 										&& (!(m instanceof MethodCall) 
@@ -671,11 +650,11 @@ public class DBusDaemon extends Thread
                logger.error("Dbus exception:", DBe);
             }
       }
-      logger.error("exit");
+      logger.info("exit");
    }
+
    private void removeConnection(Connstruct c)
    {
-      logger.debug("enter");
       boolean exists;
       synchronized(conns) {
          if ((exists = conns.containsKey(c))) {
@@ -704,31 +683,28 @@ public class DBusDaemon extends Thread
                names.remove(name);
          }
       }
-      logger.debug( "exit");
    }
+
    public void addSock(UnixSocket us)
    {
-      logger.debug( "enter");
-      logger.warn("New Client");
+      logger.info("New Client: {}");
       Connstruct c = new Connstruct(us);
       Reader r = new Reader(c);
       synchronized (conns) {
          conns.put(c, r);
       }
       r.start();
-      logger.debug("exit");
    }
+
    public void addSock(Socket s) throws IOException
    {
-      logger.debug("enter");
-      logger.warn("New Client");
+      logger.info("New Client: {}",s);
       Connstruct c = new Connstruct(s);
       Reader r = new Reader(c);
       synchronized (conns) {
          conns.put(c, r);
       }
       r.start();
-      logger.debug("exit");
    }
    public static void syntax()
    {
@@ -748,7 +724,6 @@ public class DBusDaemon extends Thread
    }
    public static void main(String args[]) throws Exception
    {
-      logger.debug("enter");
       String addr = null;
       String pidfile = null;
       String addrfile = null;
@@ -802,17 +777,17 @@ public class DBusDaemon extends Thread
       if (null != pidfile) saveFile(System.getProperty("Pid"), pidfile);
 
       // start the daemon
-       logger.warn("Binding to "+addr);
+       logger.info("Binding to "+addr);
       if ("unix".equals(address.getType()))
          doUnix(address);
       else if ("tcp".equals(address.getType()))
          doTCP(address);
       else throw new Exception("Unknown address type: "+address.getType());
-       logger.debug("exit");
+       logger.info("exit");
    }
    private static void doUnix(BusAddress address) throws IOException
    {
-      logger.debug("enter");
+      logger.info("start unix socket server: {}",address);
       UnixServerSocket uss;
       if (null != address. getParameter("abstract"))
          uss = new UnixServerSocket(new UnixSocketAddress(address.getParameter("abstract"), true)); 
@@ -836,8 +811,8 @@ public class DBusDaemon extends Thread
    }
    private static void doTCP(BusAddress address) throws IOException
    {
-      logger.debug("enter");
-      ServerSocket ss = new ServerSocket(Integer.parseInt(address.getParameter("port")),10, InetAddress.getByName(address.getParameter("host"))); 
+      logger.info("start TCP server: {}",address);
+      ServerSocket ss = new ServerSocket(Integer.parseInt(address.getParameter("port")),10, InetAddress.getByName(address.getParameter("host")));
       DBusDaemon d = new DBusDaemon();
       d.start();
       d.sender.start();

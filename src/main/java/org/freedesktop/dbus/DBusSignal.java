@@ -136,7 +136,7 @@ public class DBusSignal extends Message
       if (null == c) 
          c = createSignalClass(intname,signame);
 
-      logger.debug("Converting signal to type: "+c);
+      logger.debug("Converting signal to type: {}",c);
       Type[] types = typeCache.get(c);
       Constructor<? extends DBusSignal> con = conCache.get(c);
       if (null == types) {
@@ -161,7 +161,9 @@ public class DBusSignal extends Message
             Object[] params = new Object[args.length + 1];
             params[0] = getPath();
             System.arraycopy(args, 0, params, 1, args.length);
-            logger.debug("Creating signal of type "+c+" with parameters "+Arrays.deepToString(params));
+            if (logger.isDebugEnabled()) {
+                logger.debug("Creating signal of type {} with parameters {}", c, Arrays.deepToString(params));
+            }
             s = con.newInstance(params);
          }
          s.headers = headers;
@@ -170,7 +172,7 @@ public class DBusSignal extends Message
          return s;
       } catch (Exception e) {
          logger.debug("exception:",e);
-         throw new DBusException(e.getMessage());
+         throw new DBusException(e.getMessage(),e);
       }
    }
    /** 
@@ -236,7 +238,7 @@ public class DBusSignal extends Message
             setArgs(args);
          } catch (Exception e) {
             logger.debug("exception: ",e);
-            throw new DBusException(_("Failed to add signal parameters: ")+e.getMessage());
+            throw new DBusException(_("Failed to add signal parameters: ")+e.getMessage(),e);
          }
       }
 

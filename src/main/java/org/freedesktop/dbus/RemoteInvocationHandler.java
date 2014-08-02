@@ -38,13 +38,14 @@ final class RemoteInvocationHandler implements InvocationHandler
          else throw new DBusExecutionException(_("Wrong return type (got void, expected a value)"));
       } else {
          try {
-            logger.trace("Converting return parameters from "+Arrays.deepToString(rp)+" to type "+m.getGenericReturnType());
-            rp = Marshalling.deSerializeParameters(rp, 
-                  new Type[] { m.getGenericReturnType() }, conn);
+            if (logger.isTraceEnabled()) {
+                logger.trace("Converting return parameters from {} to type {}", Arrays.deepToString(rp), m.getGenericReturnType());
+            }
+            rp = Marshalling.deSerializeParameters(rp,new Type[] { m.getGenericReturnType() }, conn);
          }
          catch (Exception e) {
             logger.debug("exception", e);
-            throw new DBusExecutionException(MessageFormat.format(_("Wrong return type (failed to de-serialize correct types: {0} )"), new Object[] { e.getMessage() }));
+            throw new DBusExecutionException(MessageFormat.format(_("Wrong return type (failed to de-serialize correct types: {0} )"), new Object[] { e.getMessage() }),e);
          }
       }
 
@@ -65,8 +66,8 @@ final class RemoteInvocationHandler implements InvocationHandler
             try {
                return cons.newInstance(rp);
             } catch (Exception e) {
-                logger.info("Flushing outbound queue and quitting");
-               throw new DBusException(e.getMessage());
+               logger.debug("Flushing outbound queue and quitting");
+               throw new DBusException(e.getMessage(),e);
             }
       }
    }
@@ -79,7 +80,7 @@ final class RemoteInvocationHandler implements InvocationHandler
          sig = Marshalling.getDBusType(ts);
          args = Marshalling.convertParameters(args, ts, conn);
       } catch (DBusException DBe) {
-         throw new DBusExecutionException(_("Failed to construct D-Bus type: ")+DBe.getMessage());
+         throw new DBusExecutionException(_("Failed to construct D-Bus type: ")+DBe.getMessage(),DBe);
       }
       MethodCall call;
       byte flags = 0;
@@ -102,7 +103,7 @@ final class RemoteInvocationHandler implements InvocationHandler
          }
       } catch (DBusException DBe) {
          logger.debug("Dbus exception: ", DBe);
-         throw new DBusExecutionException(_("Failed to construct outgoing method call: ")+DBe.getMessage());
+         throw new DBusExecutionException(_("Failed to construct outgoing method call: ")+DBe.getMessage(),DBe);
       }
       if (null == conn.outgoing) throw new NotConnected(_("Not Connected"));
 
@@ -112,7 +113,7 @@ final class RemoteInvocationHandler implements InvocationHandler
             return new DBusAsyncReply(call, m, conn);
          case CALL_TYPE_CALLBACK:
              synchronized (conn.pendingCallbacks) {
-                logger.debug("Queueing Callback "+callback+" for "+call);
+                logger.debug("Queueing Callback {} for {}",callback,call);
                 conn.pendingCallbacks.put(call, callback);
                 conn.pendingCallbackReplys.put(call, new DBusAsyncReply(call, m, conn));
              }
@@ -136,7 +137,7 @@ final class RemoteInvocationHandler implements InvocationHandler
          return convertRV(reply.getSig(), reply.getParameters(), m, conn);
       } catch (DBusException e) {
          logger.debug("Dbus exception:", e);
-         throw new DBusExecutionException(e.getMessage());
+         throw new DBusExecutionException(e.getMessage(),e);
       }
    }
 

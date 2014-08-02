@@ -47,7 +47,10 @@ public final class MessageReader
       if (null == buf) { buf = new byte[12]; len[0] = 0; }
       if (len[0] < 12) {
          try { rv = in.read(buf, len[0], 12-len[0]); }
-         catch (SocketTimeoutException STe) { return null; }
+         catch (SocketTimeoutException STe) {
+             logger.debug("Timeout: ",STe);
+             return null;
+         }
          if (-1 == rv) throw new EOFException(_("Underlying transport returned EOF"));
          len[0] += rv;
       }
@@ -70,7 +73,10 @@ public final class MessageReader
       if (null == tbuf) { tbuf = new byte[4]; len[1] = 0; }
       if (len[1] < 4) {
          try { rv = in.read(tbuf, len[1], 4-len[1]); }
-         catch (SocketTimeoutException STe) { return null; }
+         catch (SocketTimeoutException STe) {
+             logger.debug("Timeout: ",STe);
+             return null;
+         }
          if (-1 == rv) throw new EOFException(_("Underlying transport returned EOF"));
          len[1] += rv;
       }
@@ -96,7 +102,10 @@ public final class MessageReader
       }
       if (len[2] < headerlen) {
          try { rv = in.read(header, 8+len[2], headerlen-len[2]); }
-         catch (SocketTimeoutException STe) { return null; }
+         catch (SocketTimeoutException STe) {
+             logger.debug("Timeout: ",STe);
+             return null;
+         }
          if (-1 == rv) throw new EOFException(_("Underlying transport returned EOF"));
          len[2] += rv;
       }
@@ -111,7 +120,10 @@ public final class MessageReader
       if (null == body) { body=new byte[bodylen]; len[3] = 0; }
       if (len[3] < body.length) {
          try { rv = in.read(body, len[3], body.length-len[3]); }
-         catch (SocketTimeoutException STe) { return null; }
+         catch (SocketTimeoutException STe) {
+             logger.debug("Timeout: ",STe);
+             return null;
+         }
          if (-1 == rv) throw new EOFException(_("Underlying transport returned EOF"));
          len[3] += rv;
       }
@@ -167,6 +179,7 @@ public final class MessageReader
       header = null;
       return m;
    }
+
    public void close() throws IOException
    {
       logger.debug("Closing Message Reader");

@@ -52,19 +52,23 @@ import static org.freedesktop.dbus.Gettext._;
  */
 public class DBusViewer
 {
-	private static final Map<String, Integer> CONNECTION_TYPES = new HashMap<String, Integer>();
+	private static final Map<String, String> CONNECTION_TYPES = new HashMap<String, String>();
     private final Logger logger= LoggerFactory.getLogger(DBusViewer.class);
 	static
 	{
-		CONNECTION_TYPES.put("System", DBusConnection.SYSTEM);
-		CONNECTION_TYPES.put("Session", DBusConnection.SESSION);
-	}
+		CONNECTION_TYPES.put("System", Integer.toString(DBusConnection.SYSTEM));
+		CONNECTION_TYPES.put("Session", Integer.toString(DBusConnection.SESSION));
+        //use SOCAT to access remote dbus interfaces,
+        //on remote side run (as root) : socat TCP-LISTEN:<port>,reuseaddr,fork UNIX-CONNECT:/var/run/dbus/system_bus_socket
+        //on local side run (as user)  : socat UNIX-LISTEN:/tmp/dbus-system,fork TCP:<ip remote>:<port>"
+        CONNECTION_TYPES.put("Remote","unix:path=/tmp/dbus-system");
+    }
 
 	/** Create the DBusViewer
 	 * 
 	 * @param connectionTypes The map of connection types
 	 */
-	public DBusViewer(final Map<String, Integer> connectionTypes)
+	public DBusViewer(final Map<String, String> connectionTypes)
 	{
 		connections = new ArrayList<DBusConnection>(connectionTypes.size());
 
@@ -87,7 +91,7 @@ public class DBusViewer
 						frame.dispose();
 						for (DBusConnection connection : connections)
 						{
-							connection.disconnect();
+                                connection.disconnect();
 						}
 						System.exit(0);
 					}
@@ -112,7 +116,7 @@ public class DBusViewer
 	 * @param connectionTypes The connection
 	 */
 	private void addTabs(final JTabbedPane tabbedPane,
-			final Map<String, Integer> connectionTypes)
+			final Map<String, String> connectionTypes)
 	{
 		for (final String key : connectionTypes.keySet())
 		{
@@ -124,13 +128,23 @@ public class DBusViewer
 			@SuppressWarnings("synthetic-access")
 			public void run()
 			{
-				boolean users = true, owners = true;
+
+                boolean users = true, owners = true;
 				for (final String key : connectionTypes.keySet())
 				{
 					try
 					{
-						DBusConnection conn = DBusConnection
-								.getConnection(connectionTypes.get(key));
+                        DBusConnection conn;
+                        //if (key.equals("Session")) {
+                        //    conn = DBusConnection.getConnection("unix:path=/tmp/dbus-system");
+                        //} else {
+                        try {
+                            int type = Integer.parseInt(connectionTypes.get(key));
+                            conn = DBusConnection.getConnection(type);
+                        } catch (NumberFormatException ignore) {
+                           conn = DBusConnection.getConnection(connectionTypes.get(key));
+                        }
+                        //}
 						connections.add(conn);
 
 						final TableModel tableModel = listDBusConnection(users,

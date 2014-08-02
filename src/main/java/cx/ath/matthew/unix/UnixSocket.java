@@ -26,18 +26,19 @@
  */
 package cx.ath.matthew.unix;
 
-import java.io.InputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Represents a UnixSocket.
  */
 public class UnixSocket
 {
-   private static final Logger LOG = Logger.getLogger(UnixSocket.class.getName());
+   private static final Logger LOG = LoggerFactory.getLogger(UnixSocket.class.getName());
     
    static {
        org.it4y.jni.JNILoader.loadLibrary("libunix-java");
@@ -128,7 +129,7 @@ public class UnixSocket
     */
    public synchronized void close() throws IOException
    {
-      if (LOG.isLoggable(Level.FINE)) LOG.log(Level.FINE, "Closing socket");
+      LOG.trace("Closing socket");
       native_close(sock);
       sock = 0;
       this.closed = true;

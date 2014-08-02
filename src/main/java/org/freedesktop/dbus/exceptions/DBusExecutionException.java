@@ -24,6 +24,10 @@ public class DBusExecutionException extends RuntimeException
    {
       super(message);
    }
+   public DBusExecutionException(String message,Exception e)
+    {
+        super(message,e);
+    }
    public void setType(String type)
    {
       this.type = type;

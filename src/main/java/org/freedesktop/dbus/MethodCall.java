@@ -73,9 +73,13 @@ public class MethodCall extends Message
 
       long c = bytecounter;
       if (null != sig) append(sig, args);
-      logger.debug("Appended body, type: "+sig+" start: "+c+" end: "+bytecounter+" size: "+(bytecounter-c));
+      if (logger.isTraceEnabled()) {
+          logger.trace("Appended body, type: {} start: {} end: {} size: {}",sig,c,bytecounter,(bytecounter - c));
+      }
       marshallint(bytecounter-c, blen, 0, 4);
-      logger.debug("marshalled size ("+blen+"): "+Hexdump.format(blen));
+      if (logger.isTraceEnabled()) {
+          logger.trace("marshalled size ({}): {}" ,blen,Hexdump.format(blen));
+      }
    }
    private static long REPLY_WAIT_TIMEOUT = 20000;
    /**
@@ -99,7 +103,7 @@ public class MethodCall extends Message
     */
    public synchronized Message getReply(long timeout)
    {
-      logger.debug("Blocking on "+this);
+      logger.trace("Blocking on {}", this);
       if (null != reply) return reply;
       try {
          wait(timeout);
@@ -113,7 +117,7 @@ public class MethodCall extends Message
     */
    public synchronized Message getReply()
    {
-      logger.debug("Blocking on "+this);
+      logger.trace("Blocking on {}", this);
       if (null != reply) return reply;
       try {
          wait(REPLY_WAIT_TIMEOUT);
@@ -122,7 +126,7 @@ public class MethodCall extends Message
    }
    protected synchronized void setReply(Message reply)
    {
-      logger.debug("Setting reply to "+this+" to "+reply);
+      logger.debug("Setting reply to {} to {}",this,reply);
       this.reply = reply;
       notifyAll();
    }

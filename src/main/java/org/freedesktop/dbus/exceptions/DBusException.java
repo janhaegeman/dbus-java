@@ -23,4 +23,7 @@ public class DBusException extends Exception
    {
       super(message);
    }
+
+    public DBusException(String message, Exception dbEe) { super(message,dbEe);
+    }
 }

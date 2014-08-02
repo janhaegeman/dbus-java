@@ -47,10 +47,10 @@ public final class DirectConnection extends AbstractConnection
 			connected = true;
       } catch (IOException IOe) {
          logger.debug("ioexception", IOe);
-         throw new DBusException(_("Failed to connect to bus ")+IOe.getMessage());
+         throw new DBusException(_("Failed to connect to bus ")+IOe.getMessage(),IOe);
       } catch (ParseException Pe) {
          logger.debug("exception", Pe);
-         throw new DBusException(_("Failed to connect to bus ")+Pe.getMessage());
+         throw new DBusException(_("Failed to connect to bus ")+Pe.getMessage(),Pe);
       }
 
       listen();
@@ -75,7 +75,7 @@ public final class DirectConnection extends AbstractConnection
       }
       address += ",port="+port;
       address += ",guid="+Transport.genGUID();
-      logger.debug("Created Session address: "+address);
+      logger.debug("Created Session address: {}",address);
       return address;
    }
 
@@ -140,7 +140,7 @@ public final class DirectConnection extends AbstractConnection
          return newi;
       } catch (Exception e) {
          logger.debug("exception", e);
-         throw new DBusException(MessageFormat.format(_("Failed to create proxy object for {0}; reason: {1}."), new Object[] { path, e.getMessage()}));
+         throw new DBusException(MessageFormat.format(_("Failed to create proxy object for {0}; reason: {1}."), new Object[] { path, e.getMessage()}),e);
       }
    }
    

@@ -49,7 +49,7 @@ public final class Variant<T>
          this.sig = ss[0];
       } catch (DBusException DBe) {
          logger.debug("dbus exception: ", DBe);
-         throw new IllegalArgumentException(MessageFormat.format(_("Can't wrap {0} in an unqualified Variant ({1})."), new Object[] { o.getClass(), DBe.getMessage() }));
+         throw new IllegalArgumentException(MessageFormat.format(_("Can't wrap {0} in an unqualified Variant ({1})."), new Object[] { o.getClass(), DBe.getMessage() }),DBe);
       }
       this.o = o;
    }
@@ -70,7 +70,7 @@ public final class Variant<T>
          this.sig = ss[0];
       } catch (DBusException DBe) {
          logger.debug("exception: ", DBe);
-         throw new IllegalArgumentException(MessageFormat.format(_("Can't wrap {0} in an unqualified Variant ({1})."), new Object[] { type, DBe.getMessage() }));
+         throw new IllegalArgumentException(MessageFormat.format(_("Can't wrap {0} in an unqualified Variant ({1})."), new Object[] { type, DBe.getMessage() }),DBe);
       }
       this.o = o;
    }
@@ -92,7 +92,7 @@ public final class Variant<T>
          this.type = ts.get(0);
       } catch (DBusException DBe) {
          logger.debug("exception: ", DBe);
-         throw new IllegalArgumentException(MessageFormat.format(_("Can't wrap {0} in an unqualified Variant ({1})."), new Object[] { sig, DBe.getMessage() }));
+         throw new IllegalArgumentException(MessageFormat.format(_("Can't wrap {0} in an unqualified Variant ({1})."), new Object[] { sig, DBe.getMessage() }),DBe);
       }
       this.o = o;
    }

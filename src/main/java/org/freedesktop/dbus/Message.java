@@ -217,7 +217,9 @@ public abstract class Message
       bytecounter = msg.length+headers.length+body.length;
       logger.debug("headers: {}",headers);
       Object[] hs = extract("a(yv)", headers, 0);
-      logger.debug("hs: ",Arrays.deepToString(hs));
+      if (logger.isDebugEnabled()) {
+          logger.debug("hs: ", Arrays.deepToString(hs));
+      }
       for (Object o: (Vector<Object>) hs[0]) {
          this.headers.put((Byte) ((Object[])o)[0], ((Variant<Object>)((Object[])o)[1]).getValue());
       }
@@ -540,7 +542,7 @@ public abstract class Message
                   payloadbytes = payload.getBytes("UTF-8");
                } catch (UnsupportedEncodingException UEe) {
                   logger.debug("Encoding error:",UEe);
-                  throw new DBusException(_("System does not support UTF-8 encoding"));
+                  throw new DBusException(_("System does not support UTF-8 encoding"),UEe);
                }
                logger.debug("Appending String of length {}",payloadbytes.length);
                appendint(payloadbytes.length, 4);
@@ -568,7 +570,7 @@ public abstract class Message
                // padding to the element alignment, then elements in
                // order. The length is the length from the end of the
                // initial padding to the end of the last element.
-               if (data instanceof Object[]) {
+               if (logger.isDebugEnabled() && data instanceof Object[]) {
                      logger.debug("Appending array: {}",Arrays.deepToString((Object[])data));
                }
 
@@ -713,7 +715,7 @@ public abstract class Message
    {
       logger.debug("padding for {}",(char)type);
       int a = getAlignment(type);
-      logger.debug("{} {} {} {}",preallocated,paofs,bytecounter,a);
+      logger.trace("{} {} {} {}", preallocated, paofs, bytecounter, a);
       int b = (int) ((bytecounter-preallocated)%a);
       if (0 == b) return;
       a = (a-b);
@@ -722,7 +724,7 @@ public abstract class Message
          preallocated -= a;
       } else
          appendBytes(padding[a]);
-      logger.debug("{} {} {} {}",preallocated,paofs,bytecounter,a);
+      logger.trace("{} {} {} {}", preallocated, paofs, bytecounter, a);
    }
    /**
     * Return the alignment for a given type.
@@ -769,11 +771,15 @@ public abstract class Message
     */
    public void append(String sig, Object... data) throws DBusException
    {
-      logger.debug("Appending sig:{} data: {}",sig,Arrays.deepToString(data));
+      if (logger.isDebugEnabled()) {
+          logger.debug("Appending sig:{} data: {}", sig, Arrays.deepToString(data));
+      }
       byte[] sigb = sig.getBytes();
       int j = 0;
       for (int i = 0; i < sigb.length; i++) {
-         logger.debug( "Appending item: {} {}",i,((char)sigb[i])+" "+j);
+         if (logger.isTraceEnabled()) {
+             logger.debug("Appending item: {} {} {}", i, ((char) sigb[i]), j);
+         }
          i = appendone(sigb, i, data[j++]);
       }
    }
@@ -960,7 +966,9 @@ public abstract class Message
             break;
          case ArgumentType.DICT_ENTRY1:
             Object[] decontents = new Object[2];
-            logger.debug("Extracting Dict Entry ({}) from: {}",Hexdump.toAscii(sigb,ofs[0],sigb.length-ofs[0]),Hexdump.toHex(buf,ofs[1],buf.length-ofs[1]));
+            if (logger.isDebugEnabled()) {
+                logger.debug("Extracting Dict Entry ({}) from: {}", Hexdump.toAscii(sigb, ofs[0], sigb.length - ofs[0]), Hexdump.toHex(buf, ofs[1], buf.length - ofs[1]));
+            }
             ofs[0]++;
             decontents[0] = extractone(sigb, buf, ofs, true);
             ofs[0]++;
@@ -982,7 +990,7 @@ public abstract class Message
                rv = new String(buf, ofs[1], length, "UTF-8");
             } catch (UnsupportedEncodingException UEe) {
                logger.debug("Encoding: ",UEe);
-               throw new DBusException(_("System does not support UTF-8 encoding"));
+               throw new DBusException(_("System does not support UTF-8 encoding"),UEe);
             }
             ofs[1] += length + 1;
             break;
@@ -1000,10 +1008,12 @@ public abstract class Message
          default: 
             throw new UnknownTypeCodeException(sigb[ofs[0]]);
       }
-      if (rv instanceof Object[])
-         logger.debug("Extracted: {} (now at {})",Arrays.deepToString((Object[]) rv),ofs[1]);
-      else
-         logger.debug("Extracted: {} (now at {})", rv,ofs[1]);
+      if (logger.isDebugEnabled()) {
+          if (rv instanceof Object[])
+              logger.debug("Extracted: {} (now at {})", Arrays.deepToString((Object[]) rv), ofs[1]);
+          else
+              logger.debug("Extracted: {} (now at {})", rv, ofs[1]);
+      }
       return rv;
    }
    /** 
@@ -1029,6 +1039,7 @@ public abstract class Message
    public Object[] extract(String sig, byte[] buf, int[] ofs) throws DBusException
    {
       if (logger.isDebugEnabled()) {
+          logger.debug("extract({},#{}, \\{{},{}\\})",sig,buf.length,ofs[0],ofs[1]);
           logger.debug("extract(" + sig + ",#" + buf.length + ", {" + ofs[0] + "," + ofs[1] + "}");
       }
       Vector<Object> rv = new Vector<Object>();

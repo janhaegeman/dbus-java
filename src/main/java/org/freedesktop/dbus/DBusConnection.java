@@ -261,17 +261,17 @@ public class DBusConnection extends AbstractConnection
 							r = new BufferedReader(new FileReader(addressfile));
 							String l;
 							while (null != (l = r.readLine())) {
-                                logger.trace("Reading D-Bus session data: "+l);
+                                logger.trace("Reading D-Bus session data: {}",l);
 								if (l.matches("DBUS_SESSION_BUS_ADDRESS.*")) {
 									s = l.replaceAll("^[^=]*=", "");
-									logger.trace("Parsing "+l+" to "+s);
+									logger.trace("Parsing {} to {}",l,s);
 								}
 							}
 							if (null == s || "".equals(s)) throw new DBusException(_("Cannot Resolve Session Bus Address"));
-                            logger.info("Read bus address "+s+" from file "+addressfile.toString());
+                            logger.info("Read bus address {} from file {}",s,addressfile.toString());
 						} catch (Exception e) {
                             logger.debug("exception", e);
-							throw new DBusException(_("Cannot Resolve Session Bus Address"));
+							throw new DBusException(_("Cannot Resolve Session Bus Address"),e);
 						}
 					}
                break;
@@ -279,13 +279,13 @@ public class DBusConnection extends AbstractConnection
                throw new DBusException(_("Invalid Bus Type: ")+bustype);
          }
          DBusConnection c = conn.get(s);
-         logger.trace("Getting bus connection for "+s+": "+c);
+         logger.trace("Getting bus connection for {}:{}",s,c);
          if (null != c) {
             synchronized (c._reflock) { c._refcount++; }
             return c;
          }
          else {
-            logger.debug("Creating new bus connection to: "+s);
+            logger.debug("Creating new bus connection to: {}",s);
             c = new DBusConnection(s);
             conn.put(s, c);
             return c;
@@ -306,13 +306,13 @@ public class DBusConnection extends AbstractConnection
          transport = new Transport(addr, AbstractConnection.TIMEOUT);
 			connected = true;
       } catch (IOException IOe) {
-         logger.error("IOException: ", IOe);
+         logger.debug("IOException: ", IOe);
          disconnect();
-         throw new DBusException(_("Failed to connect to bus ")+IOe.getMessage());
+         throw new DBusException(_("Failed to connect to bus ")+IOe.getMessage(),IOe);
       } catch (ParseException Pe) {
-         logger.error("Parse error:",Pe);
+         logger.debug("Parse error:",Pe);
          disconnect();
-         throw new DBusException(_("Failed to connect to bus ")+Pe.getMessage());
+         throw new DBusException(_("Failed to connect to bus ")+Pe.getMessage(),Pe);
       }
 
       // start listening for calls
@@ -329,7 +329,7 @@ public class DBusConnection extends AbstractConnection
          busnames.add(_dbus.Hello());
       } catch (DBusExecutionException DBEe) {
          logger.debug("dbus exception: ",DBEe);
-         throw new DBusException(DBEe.getMessage());
+         throw new DBusException(DBEe.getMessage(),DBEe);
       }
    }
 
@@ -337,11 +337,11 @@ public class DBusConnection extends AbstractConnection
    DBusInterface dynamicProxy(String source, String path) throws DBusException
    {
 
-	  logger.info("Introspecting "+path+" on "+source+" for dynamic proxy creation");
+	  logger.info("Introspecting {} on {} for dynamic proxy creation",path,source);
       try {
          DBus.Introspectable intro = getRemoteObject(source, path, DBus.Introspectable.class);
          String data = intro.Introspect();
-          logger.trace("Got introspection data: "+data);
+          logger.trace("Got introspection data: {}",data);
          String[] tags = data.split("[<>]");
          Vector<String> ifaces = new Vector<String>();
          for (String tag: tags) {
@@ -351,7 +351,7 @@ public class DBusConnection extends AbstractConnection
          }
          Vector<Class<? extends Object>> ifcs = new Vector<Class<? extends Object>>();
          for(String iface: ifaces) {
-                logger.debug("Trying interface "+iface);
+                logger.trace("Trying interface {}",iface);
             int j = 0;
             while (j >= 0) {
                try {
@@ -380,7 +380,7 @@ public class DBusConnection extends AbstractConnection
          return newi;
       } catch (Exception e) {
          logger.debug("Exception: ",e);
-         throw new DBusException(MessageFormat.format(_("Failed to create proxy object for {0} exported by {1}. Reason: {2}"), new Object[] { path, source, e.getMessage() }));
+         throw new DBusException(MessageFormat.format(_("Failed to create proxy object for {0} exported by {1}. Reason: {2}"), new Object[] { path, source, e.getMessage() }),e);
       }
    }
    
@@ -415,7 +415,7 @@ public class DBusConnection extends AbstractConnection
             rv = _dbus.ReleaseName(busname);
          } catch (DBusExecutionException DBEe) {
             logger.debug("exception:", DBEe);
-            throw new DBusException(DBEe.getMessage());
+            throw new DBusException(DBEe.getMessage(),DBEe);
          }
          this.busnames.remove(busname);
       }
@@ -439,7 +439,7 @@ public class DBusConnection extends AbstractConnection
                      DBus.DBUS_NAME_FLAG_DO_NOT_QUEUE));
          } catch (DBusExecutionException DBEe) {
             logger.debug("exception:",DBEe);
-            throw new DBusException(DBEe.getMessage());
+            throw new DBusException(DBEe.getMessage(),DBEe);
          }
          switch (rv.intValue()) {
             case DBus.DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER: break;
@@ -683,10 +683,10 @@ public class DBusConnection extends AbstractConnection
                try {
                   _dbus.RemoveMatch(rule.toString());
                } catch (NotConnected NC) {
-                  logger.error("exception:" ,NC);
+                  logger.info("not connected:" ,NC.getMessage());
                } catch (DBusExecutionException DBEe) {
                   logger.debug("exception:", DBEe);
-						throw new DBusException(DBEe.getMessage());
+						throw new DBusException(DBEe.getMessage(),DBEe);
                }
             }
          } 
@@ -737,7 +737,7 @@ public class DBusConnection extends AbstractConnection
          _dbus.AddMatch(rule.toString());
       } catch (DBusExecutionException DBEe) {
          logger.debug("exception", DBEe);
-         throw new DBusException(DBEe.getMessage());
+         throw new DBusException(DBEe.getMessage(),DBEe);
       }
       SignalTuple key = new SignalTuple(rule.getInterface(), rule.getMember(), rule.getObject(), rule.getSource());
       synchronized (handledSignals) {
@@ -761,7 +761,7 @@ public class DBusConnection extends AbstractConnection
       synchronized (conn) {
          synchronized (_reflock) {
             if (0 == --_refcount) {
-               logger.info("Disconnecting DBusConnection");
+               logger.info("Disconnecting {}",this);
                // Set all pending messages to have an error.
                try {
                   Error err = new Error(

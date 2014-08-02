@@ -12,8 +12,6 @@ package org.freedesktop.dbus.bin;
 
 import org.freedesktop.dbus.*;
 import org.freedesktop.dbus.Error;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Type;
@@ -22,7 +20,6 @@ import java.util.Vector;
 
 public class Caller
 {
-   private final Logger logger= LoggerFactory.getLogger(Caller.class);
    @SuppressWarnings("unchecked")
    public static void main(String[] args) 
    {
