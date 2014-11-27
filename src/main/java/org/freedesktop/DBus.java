@@ -18,15 +18,7 @@ import java.lang.annotation.Target;
 import java.util.Map;
 import java.util.List;
 
-import org.freedesktop.dbus.DBusInterface;
-import org.freedesktop.dbus.DBusSignal;
-import org.freedesktop.dbus.Position;
-import org.freedesktop.dbus.Struct;
-import org.freedesktop.dbus.Tuple;
-import org.freedesktop.dbus.UInt16;
-import org.freedesktop.dbus.UInt32;
-import org.freedesktop.dbus.UInt64;
-import org.freedesktop.dbus.Variant;
+import org.freedesktop.dbus.*;
 import org.freedesktop.dbus.exceptions.DBusException;
 import org.freedesktop.dbus.exceptions.DBusExecutionException;
 
@@ -62,6 +54,38 @@ public interface DBus extends DBusInterface
        */
       public String Introspect();
    }
+
+    /**
+     * Objects can provide object data via this interface and method.
+     * See the <a href="http://dbus.freedesktop.org/doc/dbus-specification.html#introspection-format">Introspection Format</a>.
+     */
+    public interface ObjectManager extends DBusInterface
+    {
+        public static class InterfacesAdded extends DBusSignal
+        {
+            public final DBusInterface object_path;
+            public final Map<String,Map<String,Variant>> interfaces_and_properties;
+            public InterfacesAdded(String path, DBusInterface object_path, Map<String,Map<String,Variant>> interfaces_and_properties) throws DBusException
+            {
+                super(path, object_path, interfaces_and_properties);
+                this.object_path = object_path;
+                this.interfaces_and_properties = interfaces_and_properties;
+            }
+        }
+        public static class InterfacesRemoved extends DBusSignal
+        {
+            public final DBusInterface object_path;
+            public final List<String> interfaces;
+            public InterfacesRemoved(String path, DBusInterface object_path, List<String> interfaces) throws DBusException
+            {
+                super(path, object_path, interfaces);
+                this.object_path = object_path;
+                this.interfaces = interfaces;
+            }
+        }
+
+        public Map<Path,Map<String,Map<String,Variant>>> GetManagedObjects();
+    }
    /**
     * A standard properties interface.
     */
